@@ -7,6 +7,7 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -16,11 +17,16 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.facebook.AccessToken;
 import com.facebook.CallbackManager;
 import com.facebook.FacebookCallback;
 import com.facebook.FacebookException;
+import com.facebook.FacebookSdk;
 import com.facebook.GraphRequest;
+import com.facebook.GraphRequestAsyncTask;
 import com.facebook.GraphResponse;
+import com.facebook.HttpMethod;
+import com.facebook.LoggingBehavior;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
 import com.fbapp.sheng.facebookpagemanager.dummy.DummyContent;
@@ -31,6 +37,8 @@ import org.json.JSONObject;
 public class MainActivity extends AppCompatActivity implements PostsFragment.OnListFragmentInteractionListener{
     public static final String TAG = "MainActivity";
     CallbackManager callbackManager;
+    String currentPageId = null;
+
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -65,6 +73,11 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if (BuildConfig.DEBUG) {
+            FacebookSdk.setIsDebugEnabled(true);
+            FacebookSdk.addLoggingBehavior(LoggingBehavior.INCLUDE_ACCESS_TOKENS);
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -80,6 +93,7 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         FragmentManager fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction().replace(R.id.flContent, fragment).commit();
 
+        getPages();
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
@@ -125,7 +139,7 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
                         }
                 );
                 Bundle parameters = new Bundle();
-                parameters.putString("fields", "id, name, link");
+                parameters.putString("fields", "id, name, link, pages");
                 request.setParameters(parameters);
                 request.executeAsync();
             }
@@ -141,6 +155,39 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
             }
         });
 
+    }
+
+    private void getPages(){
+        GraphRequest request = GraphRequest.newMeRequest(
+                AccessToken.getCurrentAccessToken(),
+                new GraphRequest.GraphJSONObjectCallback() {
+                    @Override
+                    public void onCompleted(
+                            JSONObject object,
+                            GraphResponse response) {
+                        Log.v(TAG, response.toString());
+                        try {
+                            Bundle bundle = new Bundle();
+                            bundle.putString("JSONobject", object.getJSONObject("accounts").getJSONArray("data").getJSONObject(0).toString());
+                            Fragment newFragment = new Fragment();
+                            newFragment.setArguments(bundle);
+
+                            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+
+                            transaction.replace(R.id.flContent, newFragment);
+                            transaction.addToBackStack(null);
+                            transaction.commit();
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+        );
+        Bundle parameters = new Bundle();
+        parameters.putString("fields", "accounts");
+        request.setParameters(parameters);
+        request.executeAsync();
     }
 
     @Override

@@ -6,12 +6,16 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.fbapp.sheng.facebookpagemanager.dummy.DummyContent;
 import com.fbapp.sheng.facebookpagemanager.dummy.DummyContent.DummyItem;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.List;
 
@@ -25,9 +29,11 @@ public class PostsFragment extends Fragment {
 
     // TODO: Customize parameter argument names
     private static final String ARG_COLUMN_COUNT = "column-count";
+    private static final String TAG = "PostsFragment";
     // TODO: Customize parameters
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
+    private JSONObject pageInfo = null;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -60,6 +66,15 @@ public class PostsFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_posts_list, container, false);
 
+        if(getArguments() != null) {
+            String stringToParse = getArguments().getString("JSONObject");
+            try {
+                pageInfo = new JSONObject(stringToParse);
+                Log.v(TAG, pageInfo.toString());
+            } catch (JSONException jsone) {
+                jsone.printStackTrace();
+            }
+        }
         // Set the adapter
         if (view instanceof RecyclerView) {
             Context context = view.getContext();
