@@ -2,12 +2,18 @@ package com.fbapp.sheng.facebookpagemanager;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -20,7 +26,6 @@ import com.fbapp.sheng.facebookpagemanager.model.PostsItem;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +44,7 @@ public class PostsFragment extends Fragment {
     private List<PostsItem> postList;
     RecyclerView recyclerView;
     MyPostsRecyclerViewAdapter postAdapter;
+    TabLayout tab;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -58,7 +64,7 @@ public class PostsFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        setHasOptionsMenu(true);
         if (getArguments() != null) {
             mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
         }
@@ -70,23 +76,46 @@ public class PostsFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_posts_list, container, false);
 
+        postList = new ArrayList<PostsItem>(0);
         // Set the adapter
-        if (view instanceof RecyclerView) {
-            Context context = view.getContext();
-            recyclerView = (RecyclerView) view;
-            postList = new ArrayList<PostsItem>(0);
-            postAdapter = new MyPostsRecyclerViewAdapter(postList, mListener);
-            if (mColumnCount <= 1) {
-                recyclerView.setLayoutManager(new LinearLayoutManager(context));
-            } else {
-                recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
-            }
-            recyclerView.setAdapter(postAdapter);
+        Context context = view.getContext();
+        recyclerView = (RecyclerView) view.findViewById(R.id.list);
+
+        postAdapter = new MyPostsRecyclerViewAdapter(postList, mListener);
+        if (mColumnCount <= 1) {
+            recyclerView.setLayoutManager(new LinearLayoutManager(context));
+        } else {
+            recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
         }
-        loadPagePosts(new PagePreference(getActivity()).getPageId(), false);
+        recyclerView.setAdapter(postAdapter);
+
+        loadPagePosts(new PagePreference(getActivity()).getPageId(), true);
+
+        tab = (TabLayout) view.findViewById(R.id.tab_layout);
+        tab.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab1) {
+                switch(tab1.getPosition()) {
+                    case 0:
+                        loadPagePosts(new PagePreference(getActivity()).getPageId(), true);
+                        break;
+                    case 1:
+                        loadPagePosts(new PagePreference(getActivity()).getPageId(), false);
+                        break;
+                }
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab1) {
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab1) {
+            }
+        });
+
         return view;
     }
-
 
     @Override
     public void onAttach(Context context) {
@@ -166,8 +195,6 @@ public class PostsFragment extends Fragment {
                         catch (JSONException jsone) {
                             jsone.printStackTrace();
                         }
-
-
                     }
                 }
         );

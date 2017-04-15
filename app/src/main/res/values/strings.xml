@@ -1,8 +1,10 @@
 <resources>
     <string name="app_name">FacebookPageManager</string>
     <string name="title_posts">Posts</string>
-    <string name="title_metrics">Dashboard</string>
+    <string name="title_metrics">Metrics</string>
     <string name="title_inbox">Inbox</string>
     <string name="title_notifications">Notifications</string>
     <string name="facebook_app_id">1923207337912333</string>
+    <string name="action_published">Published</string>
+    <string name="action_unpublished">Unpublished</string>
 </resources>

@@ -8,6 +8,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -73,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         }
 
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
 
         if(savedInstanceState == null) {

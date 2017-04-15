@@ -1,4 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+<android.support.design.widget.TabLayout
+    android:id="@+id/tab_layout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <android.support.design.widget.TabItem
+        android:id="@+id/action_published"
+        android:text="@string/action_published"/>
+    <android.support.design.widget.TabItem
+        android:id="@+id/action_unpublished"
+        android:text="@string/action_unpublished"/>
+</android.support.design.widget.TabLayout>
 <android.support.v7.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -11,3 +26,4 @@
     app:layoutManager="LinearLayoutManager"
     tools:context="com.fbapp.sheng.facebookpagemanager.PostsFragment"
     tools:listitem="@layout/fragment_posts" />
+</LinearLayout>
