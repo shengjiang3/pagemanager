@@ -11,12 +11,18 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.fbapp.sheng.facebookpagemanager.dummy.DummyContent;
-import com.fbapp.sheng.facebookpagemanager.dummy.DummyContent.DummyItem;
+import com.facebook.AccessToken;
+import com.facebook.GraphRequest;
+import com.facebook.GraphResponse;
+import com.facebook.HttpMethod;
+import com.fbapp.sheng.facebookpagemanager.model.PagePreference;
+import com.fbapp.sheng.facebookpagemanager.model.PostsItem;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,14 +32,13 @@ import java.util.List;
  * interface.
  */
 public class PostsFragment extends Fragment {
-
-    // TODO: Customize parameter argument names
     private static final String ARG_COLUMN_COUNT = "column-count";
     private static final String TAG = "PostsFragment";
-    // TODO: Customize parameters
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
-    private JSONObject pageInfo = null;
+    private List<PostsItem> postList;
+    RecyclerView recyclerView;
+    MyPostsRecyclerViewAdapter postAdapter;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -42,8 +47,6 @@ public class PostsFragment extends Fragment {
     public PostsFragment() {
     }
 
-    // TODO: Customize parameter initialization
-    @SuppressWarnings("unused")
     public static PostsFragment newInstance(int columnCount) {
         PostsFragment fragment = new PostsFragment();
         Bundle args = new Bundle();
@@ -59,6 +62,7 @@ public class PostsFragment extends Fragment {
         if (getArguments() != null) {
             mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
         }
+        getPageAccessToken(new PagePreference(getActivity()).getPageId());
     }
 
     @Override
@@ -66,26 +70,20 @@ public class PostsFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_posts_list, container, false);
 
-        if(getArguments() != null) {
-            String stringToParse = getArguments().getString("JSONObject");
-            try {
-                pageInfo = new JSONObject(stringToParse);
-                Log.v(TAG, pageInfo.toString());
-            } catch (JSONException jsone) {
-                jsone.printStackTrace();
-            }
-        }
         // Set the adapter
         if (view instanceof RecyclerView) {
             Context context = view.getContext();
-            RecyclerView recyclerView = (RecyclerView) view;
+            recyclerView = (RecyclerView) view;
+            postList = new ArrayList<PostsItem>(0);
+            postAdapter = new MyPostsRecyclerViewAdapter(postList, mListener);
             if (mColumnCount <= 1) {
                 recyclerView.setLayoutManager(new LinearLayoutManager(context));
             } else {
                 recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
             }
-            recyclerView.setAdapter(new MyPostsRecyclerViewAdapter(DummyContent.ITEMS, mListener));
+            recyclerView.setAdapter(postAdapter);
         }
+        loadPagePosts(new PagePreference(getActivity()).getPageId(), false);
         return view;
     }
 
@@ -112,13 +110,67 @@ public class PostsFragment extends Fragment {
      * fragment to allow an interaction in this fragment to be communicated
      * to the activity and potentially other fragments contained in that
      * activity.
-     * <p/>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnListFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onListFragmentInteraction(DummyItem item);
+        void onListFragmentInteraction(PostsItem item);
+    }
+
+    private void getPageAccessToken(final String page_id) {
+        Bundle parameters = new Bundle();
+        parameters.putString("fields", "access_token");
+        GraphRequest request = new GraphRequest(AccessToken.getCurrentAccessToken(),
+                "/" + page_id,
+                parameters,
+                HttpMethod.GET,
+                new GraphRequest.Callback() {
+                    @Override
+                    public void onCompleted(GraphResponse response) {
+                        try {
+                            String pageAccessToken = response.getJSONObject().getString("access_token").toString();
+                            new PagePreference(getActivity()).setPageAccessToken(pageAccessToken);
+                        }
+                        catch(JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+        );
+        request.executeAsync();
+    }
+
+    private void loadPagePosts(final String page_id, boolean is_published) {
+        Bundle parameters = new Bundle();
+        parameters.putString("fields", "id,message,from,to");
+        parameters.putString("access_token", new PagePreference(getActivity()).getPageAccessToken());
+        parameters.putBoolean("is_published", is_published);
+        GraphRequest request = new GraphRequest(AccessToken.getCurrentAccessToken(),
+                "/" + page_id + "/promotable_posts",
+                parameters,
+                HttpMethod.GET,
+                new GraphRequest.Callback() {
+                    @Override
+                    public void onCompleted(GraphResponse response) {
+                        try {
+                            JSONArray arr = response.getJSONObject().getJSONArray("data");
+                            postList.clear();
+                            for(int i = 0; i < arr.length(); ++i) {
+                                String id = arr.getJSONObject(i).getString("id");
+                                String message = arr.getJSONObject(i).getString("message");
+                                String from = arr.getJSONObject(i).getJSONObject("from").getString("name");
+                                PostsItem temp = new PostsItem(id, message, from);
+                                postList.add(temp);
+                            }
+                            postAdapter.notifyDataSetChanged();
+                            recyclerView.setAdapter(postAdapter);
+                        }
+                        catch (JSONException jsone) {
+                            jsone.printStackTrace();
+                        }
+
+
+                    }
+                }
+        );
+        request.executeAsync();
     }
 }
