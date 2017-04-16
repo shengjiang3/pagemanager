@@ -2,20 +2,21 @@ package com.fbapp.sheng.facebookpagemanager;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 
 import com.facebook.AccessToken;
 import com.facebook.GraphRequest;
@@ -42,9 +43,10 @@ public class PostsFragment extends Fragment {
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
     private List<PostsItem> postList;
-    RecyclerView recyclerView;
-    MyPostsRecyclerViewAdapter postAdapter;
-    TabLayout tab;
+    private RecyclerView recyclerView;
+    private MyPostsRecyclerViewAdapter postAdapter;
+    private TabLayout tab;
+    private FloatingActionButton fab;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -104,13 +106,20 @@ public class PostsFragment extends Fragment {
                         break;
                 }
             }
-
             @Override
             public void onTabReselected(TabLayout.Tab tab1) {
             }
 
             @Override
             public void onTabUnselected(TabLayout.Tab tab1) {
+            }
+        });
+
+        fab = (FloatingActionButton) view.findViewById(R.id.fab_add_post);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view1) {
+                createPostsDialog();
             }
         });
 
@@ -142,6 +151,34 @@ public class PostsFragment extends Fragment {
      */
     public interface OnListFragmentInteractionListener {
         void onListFragmentInteraction(PostsItem item);
+    }
+
+    private void createPostsDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setTitle("Create Post");
+        final LinearLayout linearView = new LinearLayout(getActivity());
+        builder.setView(linearView);
+
+        final AlertDialog alertDialog = builder.create();
+        LayoutInflater inflater = alertDialog.getLayoutInflater();
+        final View dialogLayout = inflater.inflate(R.layout.create_posts_dialog, linearView);
+        alertDialog.show();
+
+        Button publishButton = (Button) dialogLayout.findViewById(R.id.button_post);
+        publishButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                CheckBox isUnpublished = (CheckBox) dialogLayout.findViewById(R.id.checkbox_is_unpublished);
+                EditText postText = (EditText) dialogLayout.findViewById(R.id.create_post_text);
+                Bundle parameters = new Bundle();
+                parameters.putString("message", postText.getText().toString());
+                if(isUnpublished.isChecked()) {
+                    parameters.putBoolean("published", false);
+                }
+                pushContent(new PagePreference(getActivity()).getPageId(), parameters);
+                alertDialog.dismiss();
+            }
+        });
     }
 
     private void getPageAccessToken(final String page_id) {
@@ -198,6 +235,30 @@ public class PostsFragment extends Fragment {
                     }
                 }
         );
+        request.executeAsync();
+    }
+
+    private void pushContent(final String page_id, final Bundle parameters) {
+        GraphRequest request = new GraphRequest(AccessToken.getCurrentAccessToken(),
+                "/"+page_id+"/feed",
+                parameters,
+                HttpMethod.POST,
+                new GraphRequest.Callback() {
+                    @Override
+                    public void onCompleted(GraphResponse response) {
+                        Log.v(TAG, response.toString());
+                        boolean isPublishedTab = true;
+                        switch(tab.getSelectedTabPosition()) {
+                            case 0:
+                                isPublishedTab = true;
+                                break;
+                            case 1:
+                                isPublishedTab = false;
+                                break;
+                        }
+                        loadPagePosts(page_id, isPublishedTab);
+                    }
+                });
         request.executeAsync();
     }
 }

@@ -8,7 +8,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -23,6 +22,7 @@ import com.facebook.FacebookSdk;
 import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
 import com.facebook.LoggingBehavior;
+import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
 import com.fbapp.sheng.facebookpagemanager.model.PagePreference;
@@ -30,6 +30,8 @@ import com.fbapp.sheng.facebookpagemanager.model.PostsItem;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity implements PostsFragment.OnListFragmentInteractionListener{
     public static final String TAG = "MainActivity";
@@ -76,8 +78,12 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
+        AccessToken token = AccessToken.getCurrentAccessToken();
 
-        if(savedInstanceState == null) {
+        if (token == null) {
+            showFacebookLoginDialog();
+        }
+        else {
             Fragment fragment = null;
             Class fragmentClass = null;
             fragmentClass = PostsFragment.class;
@@ -91,14 +97,7 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
 
             BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
             navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-            AccessToken token = AccessToken.getCurrentAccessToken();
-
-            if (token == null) {
-                showFacebookLoginDialog();
-            }
-            else {
-                setDefaultPage();
-            }
+            setDefaultPage();
         }
     }
 
@@ -131,7 +130,9 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
                                     JSONObject object,
                                     GraphResponse response) {
                                 Log.v(TAG, response.toString());
-                                try {
+                                LoginManager.getInstance().logInWithPublishPermissions(MainActivity.this, Arrays.asList("publish_pages"));
+                                alertDialog.dismiss();
+/*                                try {
                                     String name = object.getString("name");
                                     Log.v(TAG, "obtained name: "+name);
                                     alertDialog.dismiss();
@@ -139,12 +140,13 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
                                 catch(JSONException e) {
                                     e.printStackTrace();
                                 }
+                                */
                             }
                         }
                 );
-                Bundle parameters = new Bundle();
-                parameters.putString("fields", "id, name, link, pages");
-                request.setParameters(parameters);
+                //Bundle parameters = new Bundle();
+                //parameters.putString("fields", "id, name, link, pages");
+                //request.setParameters(parameters);
                 request.executeAsync();
             }
 

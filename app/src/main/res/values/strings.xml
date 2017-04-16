@@ -7,4 +7,6 @@
     <string name="facebook_app_id">1923207337912333</string>
     <string name="action_published">Published</string>
     <string name="action_unpublished">Unpublished</string>
+    <string name="button_post">Post</string>
+    <string name="button_close">Close</string>
 </resources>
