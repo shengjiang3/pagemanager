@@ -9,4 +9,6 @@
     <string name="action_unpublished">Unpublished</string>
     <string name="button_post">Post</string>
     <string name="button_close">Close</string>
+    <string name="log_out_string">Log Out</string>
+    <string name="title_activity_main">MainActivity</string>
 </resources>

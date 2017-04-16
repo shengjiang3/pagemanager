@@ -172,6 +172,7 @@ public class PostsFragment extends Fragment {
                 EditText postText = (EditText) dialogLayout.findViewById(R.id.create_post_text);
                 Bundle parameters = new Bundle();
                 parameters.putString("message", postText.getText().toString());
+                parameters.putString("access_token", new PagePreference(getActivity()).getPageAccessToken());
                 if(isUnpublished.isChecked()) {
                     parameters.putBoolean("published", false);
                 }
@@ -191,6 +192,7 @@ public class PostsFragment extends Fragment {
                 new GraphRequest.Callback() {
                     @Override
                     public void onCompleted(GraphResponse response) {
+                        Log.v(TAG, response.toString());
                         try {
                             String pageAccessToken = response.getJSONObject().getString("access_token").toString();
                             new PagePreference(getActivity()).setPageAccessToken(pageAccessToken);

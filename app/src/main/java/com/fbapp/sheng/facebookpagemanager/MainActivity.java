@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AlertDialog;
@@ -12,6 +13,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 
 import com.facebook.AccessToken;
@@ -33,9 +35,11 @@ import org.json.JSONObject;
 
 import java.util.Arrays;
 
-public class MainActivity extends AppCompatActivity implements PostsFragment.OnListFragmentInteractionListener{
+public class MainActivity extends AppCompatActivity implements PostsFragment.OnListFragmentInteractionListener {
     public static final String TAG = "MainActivity";
-    CallbackManager callbackManager;
+
+    private NavigationView drawerList;
+    private ArrayAdapter<String> drawerAdapter;
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -68,7 +72,18 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
 
     };
 
-    @Override
+    private NavigationView.OnNavigationItemSelectedListener mOnNavigationViewItemSelectedListener = new NavigationView.OnNavigationItemSelectedListener() {
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            switch(item.getItemId()) {
+                case R.id.log_out_selection:
+                    LoginManager.getInstance().logOut();
+                    break;
+            }
+            return true;
+        }
+    };
+
     protected void onCreate(Bundle savedInstanceState) {
         if (BuildConfig.DEBUG) {
             FacebookSdk.setIsDebugEnabled(true);
@@ -78,97 +93,27 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
-        AccessToken token = AccessToken.getCurrentAccessToken();
-
-        if (token == null) {
-            showFacebookLoginDialog();
+        //callbackManager = CallbackManager.Factory.create();
+        LoginManager.getInstance().logInWithPublishPermissions(MainActivity.this, Arrays.asList("publish_pages"));
+        Fragment fragment = null;
+        Class fragmentClass = null;
+        fragmentClass = PostsFragment.class;
+        try {
+            fragment = (Fragment) fragmentClass.newInstance();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        else {
-            Fragment fragment = null;
-            Class fragmentClass = null;
-            fragmentClass = PostsFragment.class;
-            try {
-                fragment = (Fragment) fragmentClass.newInstance();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            fragmentManager.beginTransaction().replace(R.id.flContent, fragment).commit();
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        fragmentManager.beginTransaction().replace(R.id.flContent, fragment).commit();
 
-            BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
-            navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-            setDefaultPage();
-        }
+        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+
+        NavigationView drawer = (NavigationView) findViewById(R.id.navigation_drawer);
+        drawer.setNavigationItemSelectedListener(mOnNavigationViewItemSelectedListener);
+        setDefaultPage();
     }
-
-    private void showFacebookLoginDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-        builder.setTitle("Login to Facebook");
-        builder.setCancelable(false);
-        final LinearLayout linearView = new LinearLayout(MainActivity.this);
-        builder.setView(linearView);
-
-        final AlertDialog alertDialog = builder.create();
-        LayoutInflater inflater = alertDialog.getLayoutInflater();
-        View dialogLayout = inflater.inflate(R.layout.facebook_login_dialog, linearView);
-        alertDialog.show();
-
-        callbackManager = CallbackManager.Factory.create();
-        LoginButton loginButton = (LoginButton) dialogLayout.findViewById(R.id.login_button);
-        loginButton.setReadPermissions("email");
-
-        // Callback registration
-        loginButton.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
-            @Override
-            public void onSuccess(LoginResult loginResult) {
-                Log.v(TAG, loginResult.toString());
-                GraphRequest request = GraphRequest.newMeRequest(
-                        loginResult.getAccessToken(),
-                        new GraphRequest.GraphJSONObjectCallback() {
-                            @Override
-                            public void onCompleted(
-                                    JSONObject object,
-                                    GraphResponse response) {
-                                Log.v(TAG, response.toString());
-                                LoginManager.getInstance().logInWithPublishPermissions(MainActivity.this, Arrays.asList("publish_pages"));
-                                alertDialog.dismiss();
-/*                                try {
-                                    String name = object.getString("name");
-                                    Log.v(TAG, "obtained name: "+name);
-                                    alertDialog.dismiss();
-                                }
-                                catch(JSONException e) {
-                                    e.printStackTrace();
-                                }
-                                */
-                            }
-                        }
-                );
-                //Bundle parameters = new Bundle();
-                //parameters.putString("fields", "id, name, link, pages");
-                //request.setParameters(parameters);
-                request.executeAsync();
-            }
-
-            @Override
-            public void onCancel() {
-                Log.e(TAG, "Facebook login cancel");
-            }
-
-            @Override
-            public void onError(FacebookException exception) {
-                Log.e(TAG, "Facebook login error");
-            }
-        });
-
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        callbackManager.onActivityResult(requestCode, resultCode, data);
-    }
-
+    
     @Override
     public void onListFragmentInteraction(PostsItem postsItem) {
 
