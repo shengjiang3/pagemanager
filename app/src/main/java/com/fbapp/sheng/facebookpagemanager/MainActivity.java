@@ -1,32 +1,25 @@
 package com.fbapp.sheng.facebookpagemanager;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v7.app.AlertDialog;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.ArrayAdapter;
-import android.widget.LinearLayout;
 
 import com.facebook.AccessToken;
-import com.facebook.CallbackManager;
-import com.facebook.FacebookCallback;
-import com.facebook.FacebookException;
 import com.facebook.FacebookSdk;
 import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
 import com.facebook.LoggingBehavior;
 import com.facebook.login.LoginManager;
-import com.facebook.login.LoginResult;
-import com.facebook.login.widget.LoginButton;
 import com.fbapp.sheng.facebookpagemanager.model.PagePreference;
 import com.fbapp.sheng.facebookpagemanager.model.PostsItem;
 
@@ -35,7 +28,8 @@ import org.json.JSONObject;
 
 import java.util.Arrays;
 
-public class MainActivity extends AppCompatActivity implements PostsFragment.OnListFragmentInteractionListener {
+public class MainActivity extends AppCompatActivity implements PostsFragment.OnListFragmentInteractionListener,
+    PostMetricsFragment.OnFragmentInteractionListener {
     public static final String TAG = "MainActivity";
 
     private NavigationView drawerList;
@@ -75,11 +69,17 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
     private NavigationView.OnNavigationItemSelectedListener mOnNavigationViewItemSelectedListener = new NavigationView.OnNavigationItemSelectedListener() {
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            DrawerLayout mNavigationDrawer = (DrawerLayout) findViewById(R.id.drawer_layout);
             switch(item.getItemId()) {
                 case R.id.log_out_selection:
                     LoginManager.getInstance().logOut();
+                    mNavigationDrawer.closeDrawers();
+                    Intent intent = new Intent(MainActivity.this, FBLoginActivity.class);
+                    startActivity(intent);
+                    finish();
                     break;
             }
+            mNavigationDrawer.closeDrawers();
             return true;
         }
     };
@@ -93,7 +93,6 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
-        //callbackManager = CallbackManager.Factory.create();
         LoginManager.getInstance().logInWithPublishPermissions(MainActivity.this, Arrays.asList("publish_pages"));
         Fragment fragment = null;
         Class fragmentClass = null;
@@ -113,10 +112,28 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         drawer.setNavigationItemSelectedListener(mOnNavigationViewItemSelectedListener);
         setDefaultPage();
     }
-    
+
     @Override
     public void onListFragmentInteraction(PostsItem postsItem) {
+        Log.v(TAG, postsItem.id.toString());
+        Fragment fragment = null;
+        Class fragmentClass = null;
+        fragmentClass = PostMetricsFragment.class;
+        try {
+            fragment = (Fragment) fragmentClass.newInstance();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        Bundle postArgs = new Bundle();
+        postArgs.putString("post_id", postsItem.id.toString());
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        fragment.setArguments(postArgs);
+        fragmentManager.beginTransaction().replace(R.id.flContent, fragment).commit();
+    }
 
+    @Override
+    public void onFragmentInteraction(Uri uri) {
     }
 
     private void setDefaultPage(){

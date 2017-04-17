@@ -11,4 +11,16 @@
     <string name="button_close">Close</string>
     <string name="log_out_string">Log Out</string>
     <string name="title_activity_main">MainActivity</string>
+    <string name="hint_post_likes">Post Likes</string>
+    <string name="hint_post_impressions">Post Impressions</string>
+    <string name="hint_post_reach">Post Reach</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string-array name="period_array">
+        <item>Lifetime</item>
+        <item>Day</item>
+        <item>Week</item>
+        <item>Month</item>
+    </string-array>
 </resources>

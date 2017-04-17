@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
@@ -163,12 +164,32 @@ public class PostsFragment extends Fragment {
         LayoutInflater inflater = alertDialog.getLayoutInflater();
         final View dialogLayout = inflater.inflate(R.layout.create_posts_dialog, linearView);
         alertDialog.show();
+        final CheckBox isUnpublished = (CheckBox) dialogLayout.findViewById(R.id.checkbox_is_unpublished);
+        final CheckBox isScheduled = (CheckBox) dialogLayout.findViewById(R.id.checkbox_schedule_post);
+        isUnpublished.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked) {
+                    isScheduled.setEnabled(true);
+                }
+                else {
+                    isScheduled.setEnabled(false);
+                }
+            }
+        });
+
+        isScheduled.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+
+            }
+        });
 
         Button publishButton = (Button) dialogLayout.findViewById(R.id.button_post);
         publishButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                CheckBox isUnpublished = (CheckBox) dialogLayout.findViewById(R.id.checkbox_is_unpublished);
+
                 EditText postText = (EditText) dialogLayout.findViewById(R.id.create_post_text);
                 Bundle parameters = new Bundle();
                 parameters.putString("message", postText.getText().toString());
@@ -177,6 +198,14 @@ public class PostsFragment extends Fragment {
                     parameters.putBoolean("published", false);
                 }
                 pushContent(new PagePreference(getActivity()).getPageId(), parameters);
+                alertDialog.dismiss();
+            }
+        });
+
+        Button closeButton = (Button) dialogLayout.findViewById(R.id.button_close);
+        closeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
                 alertDialog.dismiss();
             }
         });

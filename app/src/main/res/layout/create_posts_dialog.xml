@@ -14,6 +14,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Create Unpublished Post"/>
+    <CheckBox
+        android:id="@+id/checkbox_schedule_post"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:text="Schedule Post"/>
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

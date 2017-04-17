@@ -34,7 +34,7 @@ public class FBLoginActivity extends AppCompatActivity {
         callbackManager = CallbackManager.Factory.create();
 
         LoginButton loginButton = (LoginButton) findViewById(R.id.login_button);
-        loginButton.setReadPermissions("email");
+        loginButton.setReadPermissions("email, read_insights");
         if(AccessToken.getCurrentAccessToken() != null) {
             startMainActivity();
         }
