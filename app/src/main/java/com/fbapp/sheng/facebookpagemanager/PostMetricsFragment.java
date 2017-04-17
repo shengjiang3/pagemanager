@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 
@@ -40,6 +41,8 @@ public class PostMetricsFragment extends Fragment {
     private EditText impressionText;
     private EditText reachText;
     private EditText likesText;
+    private Button closeButton;
+    private Button promoteButton;
     private String TAG = "PostMetricsFragment";
 
     public PostMetricsFragment() {
@@ -61,24 +64,28 @@ public class PostMetricsFragment extends Fragment {
                              Bundle savedInstanceState) {
         postId = getArguments().getString("post_id");
         View view = inflater.inflate(R.layout.fragment_post_metrics, container, false);
-        Spinner periodSpinner = (Spinner) view.findViewById(R.id.period_spinner);
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getActivity().getBaseContext(),
-                R.array.period_array, android.R.layout.simple_spinner_item);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        periodSpinner.setAdapter(adapter);
 
         impressionText = (EditText) view.findViewById(R.id.impression_number);
         reachText = (EditText) view.findViewById(R.id.reach_number);
         likesText = (EditText) view.findViewById(R.id.likes_number);
+
+        promoteButton = (Button) view.findViewById(R.id.button_promote);
+        promoteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
+
+        closeButton = (Button) view.findViewById(R.id.button_metrics_close);
+        closeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getActivity().getSupportFragmentManager().popBackStack();
+            }
+        });
         loadPostMetrics();
         return view;
-    }
-
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
     }
 
     @Override
@@ -127,8 +134,8 @@ public class PostMetricsFragment extends Fragment {
                 }
         );
         Bundle metricsArgs = new Bundle();
-        metricsArgs.putString("metric", "page_impressions");
-        //metricsArgs.putString("access_token", new PagePreference(getActivity()).getPageAccessToken());
+        metricsArgs.putString("metric", "post_impressions, post_impressions_unique");
+        metricsArgs.putString("access_token", new PagePreference(getActivity()).getPageAccessToken());
         GraphRequest viewsRequest = new GraphRequest(AccessToken.getCurrentAccessToken(),
                 "/" + postId + "/insights",
                 metricsArgs,
@@ -138,7 +145,27 @@ public class PostMetricsFragment extends Fragment {
                     public void onCompleted(GraphResponse response) {
                         try {
                             Log.v(TAG, response.toString());
-                            JSONObject arr = response.getJSONObject().getJSONObject("");
+                            JSONArray arr = response.getJSONObject().getJSONArray("data");
+                            for(int i = 0; i < arr.length(); ++i) {
+                                JSONObject dataObj = arr.getJSONObject(i);
+                                String name = dataObj.getString("name");
+                                JSONArray values = dataObj.getJSONArray("values");
+                                String value;
+                                if(values.length() != 0) {
+                                    value = values.getJSONObject(0).getString("value");
+                                }
+                                else {
+                                    value = "0";
+                                }
+                                switch(name) {
+                                    case "post_impressions":
+                                        impressionText.setText(value);
+                                        break;
+                                    case "post_impressions_unique":
+                                        reachText.setText(value);
+                                        break;
+                                }
+                            }
                         }
                         catch (JSONException jsone) {
                             jsone.printStackTrace();
