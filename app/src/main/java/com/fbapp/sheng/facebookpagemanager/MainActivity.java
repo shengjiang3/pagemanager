@@ -33,7 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements PostsFragment.OnListFragmentInteractionListener,
-    PostMetricsFragment.OnFragmentInteractionListener {
+    PostMetricsFragment.OnFragmentInteractionListener, PublishPostsFragment.OnFragmentInteractionListener {
     public static final String TAG = "MainActivity";
 
     private NavigationView drawer;

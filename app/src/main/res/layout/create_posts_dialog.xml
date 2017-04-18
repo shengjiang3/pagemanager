@@ -20,6 +20,22 @@
         android:layout_height="wrap_content"
         android:enabled="false"
         android:text="Schedule Post"/>
+    <EditText
+        android:id="@+id/date_text_field"
+        android:hint="@string/hint_date_field"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:longClickable="false"
+        android:focusable="false"/>
+    <EditText
+        android:id="@+id/time_text_field"
+        android:hint="@string/hint_time_field"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:longClickable="false"
+        android:focusable="false"/>
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
