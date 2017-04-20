@@ -16,6 +16,7 @@ import android.widget.CompoundButton;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.TimePicker;
+import android.widget.Toast;
 
 import com.facebook.AccessToken;
 import com.facebook.GraphRequest;
@@ -40,8 +41,6 @@ import java.util.Locale;
 public class PublishPostsFragment extends Fragment {
     private String TAG = "PublishPostsFragment";
     private OnFragmentInteractionListener mListener;
-    private String pageId;
-    private String messageContent;
     Calendar calendar = Calendar.getInstance();
 
 
@@ -67,7 +66,6 @@ public class PublishPostsFragment extends Fragment {
 
     public PublishPostsFragment() {
     }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -125,44 +123,47 @@ public class PublishPostsFragment extends Fragment {
                 @Override
                 public void onClick(View v) {
                     EditText postText = (EditText) dialogLayout.findViewById(R.id.create_post_text);
-                    Bundle parameters = new Bundle();
-                    parameters.putString("message", postText.getText().toString());
-                    parameters.putString("access_token", new PagePreference(getActivity()).getPageAccessToken());
-                    if(isUnpublished.isChecked()) {
-                        parameters.putBoolean("published", false);
+                    String pageAccessToken = getActivity().getSharedPreferences("PagePreference", Context.MODE_PRIVATE).getString("access_token", "none");
+                    if(pageAccessToken == "none") {
+                        Toast.makeText(getActivity(), "Error acquiring access token", Toast.LENGTH_SHORT).show();
                     }
-                    if(isScheduled.isEnabled() && isScheduled.isChecked()) {
-                        String date_string = dateField.getText().toString();
-                        if(date_string.isEmpty()) {
-                            // Error
-                            return;
+                    else {
+                        Bundle parameters = new Bundle();
+                        parameters.putString("message", postText.getText().toString());
+                        parameters.putString("access_token", pageAccessToken);
+                        if (isUnpublished.isChecked()) {
+                            parameters.putBoolean("published", false);
                         }
-                        String time_string = timeField.getText().toString();
-                        DateFormat formatter;
-                        Date convertibleDate;
-                        if(time_string.isEmpty()) {
-                            formatter = new SimpleDateFormat("MM/dd/yy");
-                            try {
-                                convertibleDate = (Date) formatter.parse(date_string);
-                                parameters.putLong("scheduled_publish_time", convertibleDate.getTime()/1000L);
+                        if (isScheduled.isEnabled() && isScheduled.isChecked()) {
+                            String date_string = dateField.getText().toString();
+                            if (date_string.isEmpty()) {
+                                // Error
+                                return;
                             }
-                            catch(ParseException pe) {
-                                pe.printStackTrace();
+                            String time_string = timeField.getText().toString();
+                            DateFormat formatter;
+                            Date convertibleDate;
+                            if (time_string.isEmpty()) {
+                                formatter = new SimpleDateFormat("MM/dd/yy");
+                                try {
+                                    convertibleDate = (Date) formatter.parse(date_string);
+                                    parameters.putLong("scheduled_publish_time", convertibleDate.getTime() / 1000L);
+                                } catch (ParseException pe) {
+                                    pe.printStackTrace();
+                                }
+                            } else {
+                                formatter = new SimpleDateFormat("MM/dd/yy h:mm a");
+                                try {
+                                    convertibleDate = (Date) formatter.parse(date_string + " " + time_string);
+                                    parameters.putLong("scheduled_publish_time", convertibleDate.getTime() / 1000L);
+                                } catch (ParseException pe) {
+                                    pe.printStackTrace();
+                                }
                             }
                         }
-                        else {
-                            formatter = new SimpleDateFormat("MM/dd/yy h:mm a");
-                            try {
-                                convertibleDate = (Date) formatter.parse(date_string + " " + time_string);
-                                parameters.putLong("scheduled_publish_time", convertibleDate.getTime()/1000L);
-                            }
-                            catch(ParseException pe) {
-                                pe.printStackTrace();
-                            }
-                        }
+                        pushContent(parameters);
+                        getActivity().getSupportFragmentManager().popBackStack();
                     }
-                    pushContent(new PagePreference(getActivity()).getPageId(), parameters);
-                    getActivity().getSupportFragmentManager().popBackStack();
                 }
             });
 
@@ -207,19 +208,25 @@ public class PublishPostsFragment extends Fragment {
         void onFragmentInteraction(Uri uri);
     }
 
-    private void pushContent(final String page_id, final Bundle parameters) {
-        GraphRequest request = new GraphRequest(AccessToken.getCurrentAccessToken(),
-                "/"+page_id+"/feed",
-                parameters,
-                HttpMethod.POST,
-                new GraphRequest.Callback() {
-                    @Override
-                    public void onCompleted(GraphResponse response) {
-                        Log.v(TAG, response.toString());
-                    }
+    private void pushContent(final Bundle parameters) {
+        String pageId = getActivity().getSharedPreferences("PagePreference", Context.MODE_PRIVATE).getString("page_id", "none");
+        if (pageId == "none") {
+            Toast.makeText(getActivity(), "Error acquiring page_id", Toast.LENGTH_SHORT).show();
+        }
+        else {
+            GraphRequest request = new GraphRequest(AccessToken.getCurrentAccessToken(),
+                    "/" + pageId + "/feed",
+                    parameters,
+                    HttpMethod.POST,
+                    new GraphRequest.Callback() {
+                        @Override
+                        public void onCompleted(GraphResponse response) {
+                            Log.v(TAG, response.toString());
+                        }
 
-                });
-        request.executeAsync();
+                    });
+            request.executeAsync();
+        }
     }
 
     private void updateDateField() {

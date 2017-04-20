@@ -1,6 +1,8 @@
 package com.fbapp.sheng.facebookpagemanager;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -13,11 +15,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import com.facebook.AccessToken;
 import com.facebook.FacebookSdk;
 import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
+import com.facebook.HttpMethod;
 import com.facebook.LoggingBehavior;
 import com.facebook.login.LoginManager;
 import com.fbapp.sheng.facebookpagemanager.model.PageItem;
@@ -40,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
     private RecyclerView drawerList;
     private List<PageItem> pageItemList;
     private MyPageItemsRecyclerViewAdapter pageItemsRecyclerViewAdapter;
+    private SharedPreferences sharedPreferences;
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
             = new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -87,13 +92,18 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         @Override
         public void onItemClick(@NonNull PageItem item) {
             DrawerLayout mNavigationDrawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-            new PagePreference(MainActivity.this).setPageId(item.getPageId());
-            new PagePreference(MainActivity.this).setName(item.getName());
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putString("page_id", item.getPageId());
+            editor.putString("name", item.getName());
+            editor.putString("access_token", "none");
+            editor.commit();
+            getPageAccessToken();
             mNavigationDrawer.closeDrawers();
             Class fragmentClass = PostsFragment.class;
             loadFragment(fragmentClass, null, false);
         }
     };
+
 
     protected void onCreate(Bundle savedInstanceState) {
         if (BuildConfig.DEBUG) {
@@ -114,6 +124,8 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
 
         drawerList = (RecyclerView) findViewById(R.id.page_drawer_list);
         drawerList.setAdapter(pageItemsRecyclerViewAdapter);
+
+        sharedPreferences = getSharedPreferences("PagePreference", MODE_PRIVATE);
 
         initializeDrawer();
 
@@ -177,13 +189,17 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
                                     String name = data.getJSONObject(i).getString("name");
                                     PageItem pageItem = new PageItem(pageId, name);
                                     if(i == 0) {
-                                        new PagePreference(MainActivity.this).setPageId(pageId);
-                                        new PagePreference(MainActivity.this).setName(name);
+                                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                                        editor.putString("page_id", pageId);
+                                        editor.putString("name", name);
+                                        editor.putString("access_token", "none");
+                                        editor.commit();
                                     }
                                     pageItemList.add(pageItem);
                                 }
                                 pageItemsRecyclerViewAdapter.notifyDataSetChanged();
                                 drawerList.setAdapter(pageItemsRecyclerViewAdapter);
+                                getPageAccessToken();
                             }
                             catch(JSONException jsone) {
                                 jsone.printStackTrace();
@@ -197,4 +213,36 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         request.setParameters(parameters);
         request.executeAsync();
     }
+
+    private void getPageAccessToken() {
+        String pageId = getSharedPreferences("PagePreference", Context.MODE_PRIVATE).getString("page_id", "none");
+        if(pageId == "none") {
+            Toast.makeText(MainActivity.this, "Error acquiring page_id", Toast.LENGTH_SHORT).show();
+        }
+        else {
+            Bundle parameters = new Bundle();
+            parameters.putString("fields", "access_token");
+            GraphRequest request = new GraphRequest(AccessToken.getCurrentAccessToken(),
+                    "/" + pageId,
+                    parameters,
+                    HttpMethod.GET,
+                    new GraphRequest.Callback() {
+                        @Override
+                        public void onCompleted(GraphResponse response) {
+                            Log.v(TAG, response.toString());
+                            try {
+                                String pageAccessToken = response.getJSONObject().getString("access_token").toString();
+                                SharedPreferences.Editor editor = getSharedPreferences("PagePreference", Context.MODE_PRIVATE).edit();
+                                editor.putString("access_token", pageAccessToken);
+                                editor.commit();
+                            } catch (JSONException e) {
+                                Toast.makeText(MainActivity.this, "Error acquiring page access token", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+            );
+            request.executeAsync();
+        }
+    }
+
 }

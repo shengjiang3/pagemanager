@@ -111,69 +111,69 @@ public class PostMetricsFragment extends Fragment {
 
     private void loadPostMetrics() {
         //StringBuilder metricRequestString = new StringBuilder("?metric={page_impressions, page_impressions_unique}");
-        Bundle args = new Bundle();
-        args.putBoolean("summary", true);
-        args.putString("access_token", new PagePreference(getActivity()).getPageAccessToken());
-        GraphRequest likesRequest = new GraphRequest(AccessToken.getCurrentAccessToken(),
-                "/" + postId + "/likes",
-                args,
-                HttpMethod.GET,
-                new GraphRequest.Callback() {
-                    @Override
-                    public void onCompleted(GraphResponse response) {
-                        try {
-                            Log.v(TAG, response.toString());
-                            JSONObject arr = response.getJSONObject();
-                            String count = arr.getJSONObject("summary").getString("total_count");
-                            likesText.setText(count);
-                        }
-                        catch (JSONException jsone) {
-                            jsone.printStackTrace();
-                        }
-                    }
-                }
-        );
-        Bundle metricsArgs = new Bundle();
-        metricsArgs.putString("metric", "post_impressions, post_impressions_unique");
-        metricsArgs.putString("access_token", new PagePreference(getActivity()).getPageAccessToken());
-        GraphRequest viewsRequest = new GraphRequest(AccessToken.getCurrentAccessToken(),
-                "/" + postId + "/insights",
-                metricsArgs,
-                HttpMethod.GET,
-                new GraphRequest.Callback() {
-                    @Override
-                    public void onCompleted(GraphResponse response) {
-                        try {
-                            Log.v(TAG, response.toString());
-                            JSONArray arr = response.getJSONObject().getJSONArray("data");
-                            for(int i = 0; i < arr.length(); ++i) {
-                                JSONObject dataObj = arr.getJSONObject(i);
-                                String name = dataObj.getString("name");
-                                JSONArray values = dataObj.getJSONArray("values");
-                                String value;
-                                if(values.length() != 0) {
-                                    value = values.getJSONObject(0).getString("value");
-                                }
-                                else {
-                                    value = "0";
-                                }
-                                switch(name) {
-                                    case "post_impressions":
-                                        impressionText.setText(value);
-                                        break;
-                                    case "post_impressions_unique":
-                                        reachText.setText(value);
-                                        break;
-                                }
+        String pageAccessToken = getActivity().getSharedPreferences("PagePreference", Context.MODE_PRIVATE).getString("access_token", "none");
+        if(pageAccessToken != "none") {
+            Bundle args = new Bundle();
+            args.putBoolean("summary", true);
+            args.putString("access_token", pageAccessToken);
+            GraphRequest likesRequest = new GraphRequest(AccessToken.getCurrentAccessToken(),
+                    "/" + postId + "/likes",
+                    args,
+                    HttpMethod.GET,
+                    new GraphRequest.Callback() {
+                        @Override
+                        public void onCompleted(GraphResponse response) {
+                            try {
+                                Log.v(TAG, response.toString());
+                                JSONObject arr = response.getJSONObject();
+                                String count = arr.getJSONObject("summary").getString("total_count");
+                                likesText.setText(count);
+                            } catch (JSONException jsone) {
+                                jsone.printStackTrace();
                             }
                         }
-                        catch (JSONException jsone) {
-                            jsone.printStackTrace();
+                    }
+            );
+            Bundle metricsArgs = new Bundle();
+            metricsArgs.putString("metric", "post_impressions, post_impressions_unique");
+            metricsArgs.putString("access_token", pageAccessToken);
+            GraphRequest viewsRequest = new GraphRequest(AccessToken.getCurrentAccessToken(),
+                    "/" + postId + "/insights",
+                    metricsArgs,
+                    HttpMethod.GET,
+                    new GraphRequest.Callback() {
+                        @Override
+                        public void onCompleted(GraphResponse response) {
+                            try {
+                                Log.v(TAG, response.toString());
+                                JSONArray arr = response.getJSONObject().getJSONArray("data");
+                                for (int i = 0; i < arr.length(); ++i) {
+                                    JSONObject dataObj = arr.getJSONObject(i);
+                                    String name = dataObj.getString("name");
+                                    JSONArray values = dataObj.getJSONArray("values");
+                                    String value;
+                                    if (values.length() != 0) {
+                                        value = values.getJSONObject(0).getString("value");
+                                    } else {
+                                        value = "0";
+                                    }
+                                    switch (name) {
+                                        case "post_impressions":
+                                            impressionText.setText(value);
+                                            break;
+                                        case "post_impressions_unique":
+                                            reachText.setText(value);
+                                            break;
+                                    }
+                                }
+                            } catch (JSONException jsone) {
+                                jsone.printStackTrace();
+                            }
                         }
                     }
-                }
-        );
-        likesRequest.executeAsync();
-        viewsRequest.executeAsync();
+            );
+            likesRequest.executeAsync();
+            viewsRequest.executeAsync();
+        }
     }
 }

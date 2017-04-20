@@ -1,6 +1,7 @@
 package com.fbapp.sheng.facebookpagemanager;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
@@ -19,6 +20,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import com.facebook.AccessToken;
 import com.facebook.GraphRequest;
@@ -49,6 +51,7 @@ public class PostsFragment extends Fragment {
     private MyPostsRecyclerViewAdapter postAdapter;
     private TabLayout tab;
     private FloatingActionButton fab;
+    private GraphResponse lastResponse;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -78,7 +81,6 @@ public class PostsFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_posts_list, container, false);
-        getPageAccessToken(new PagePreference(getActivity()).getPageId());
         postList = new ArrayList<PostsItem>(0);
         // Set the adapter
         Context context = view.getContext();
@@ -91,6 +93,7 @@ public class PostsFragment extends Fragment {
             recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
         }
         recyclerView.setAdapter(postAdapter);
+        recyclerView.setOnScrollListener(mPostsListScrollListener);
 
         tab = (TabLayout) view.findViewById(R.id.tab_layout);
         tab.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
@@ -98,10 +101,10 @@ public class PostsFragment extends Fragment {
             public void onTabSelected(TabLayout.Tab tab1) {
                 switch(tab1.getPosition()) {
                     case 0:
-                        loadPagePosts(new PagePreference(getActivity()).getPageId(), true);
+                        loadPagePosts(true);
                         break;
                     case 1:
-                        loadPagePosts(new PagePreference(getActivity()).getPageId(), false);
+                        loadPagePosts(false);
                         break;
                 }
             }
@@ -131,13 +134,27 @@ public class PostsFragment extends Fragment {
             }
         });
 
-        loadPagePosts(new PagePreference(getActivity()).getPageId(), true);
         return view;
+    }
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        lastResponse = null;
+        loadPagePosts(true);
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        SharedPreferences pref = getActivity().getSharedPreferences("PagePreference", Context.MODE_PRIVATE);
+        pref.registerOnSharedPreferenceChangeListener(mPreferenceChangedListener);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        SharedPreferences pref = getActivity().getSharedPreferences("PagePreference", Context.MODE_PRIVATE);
+        pref.unregisterOnSharedPreferenceChangeListener(mPreferenceChangedListener);
     }
 
     @Override
@@ -167,62 +184,96 @@ public class PostsFragment extends Fragment {
         void onListFragmentInteraction(PostsItem item);
     }
 
-    private void getPageAccessToken(final String page_id) {
-        Bundle parameters = new Bundle();
-        parameters.putString("fields", "access_token");
-        GraphRequest request = new GraphRequest(AccessToken.getCurrentAccessToken(),
-                "/" + page_id,
-                parameters,
-                HttpMethod.GET,
-                new GraphRequest.Callback() {
-                    @Override
-                    public void onCompleted(GraphResponse response) {
-                        Log.v(TAG, response.toString());
-                        try {
-                            String pageAccessToken = response.getJSONObject().getString("access_token").toString();
-                            new PagePreference(getActivity()).setPageAccessToken(pageAccessToken);
-                        }
-                        catch(JSONException e) {
-                            e.printStackTrace();
+    private void loadPagePosts(boolean is_published) {
+        SharedPreferences sharedPreferences = getActivity().getSharedPreferences("PagePreference", Context.MODE_PRIVATE);
+        String pageAccessToken = sharedPreferences.getString("access_token", "none");
+        String pageId = sharedPreferences.getString("page_id", "none");
+        if(pageAccessToken != "none" && pageId != "none") {
+            Bundle parameters = new Bundle();
+            parameters.putString("fields", "id,message,from,to");
+            parameters.putString("access_token", pageAccessToken);
+            parameters.putBoolean("is_published", is_published);
+            GraphRequest request = new GraphRequest(AccessToken.getCurrentAccessToken(),
+                    "/" + pageId + "/promotable_posts",
+                    parameters,
+                    HttpMethod.GET,
+                    new GraphRequest.Callback() {
+                        @Override
+                        public void onCompleted(GraphResponse response) {
+                            Log.v(TAG, response.toString());
+                            try {
+                                JSONArray arr = response.getJSONObject().getJSONArray("data");
+                                postList.clear();
+                                for(int i = 0; i < arr.length(); ++i) {
+                                    String id = arr.getJSONObject(i).getString("id");
+                                    String message = arr.getJSONObject(i).getString("message");
+                                    String from = arr.getJSONObject(i).getJSONObject("from").getString("name");
+                                    PostsItem temp = new PostsItem(id, message, from);
+                                    postList.add(temp);
+                                }
+                                postAdapter.notifyDataSetChanged();
+                                recyclerView.setAdapter(postAdapter);
+                                lastResponse = response;
+                            }
+                            catch (JSONException jsone) {
+                                Toast.makeText(getActivity(), "Error retrieving page data", Toast.LENGTH_SHORT).show();
+                            }
                         }
                     }
-                }
-        );
-        request.executeAsync();
+            );
+            request.executeAsync();
+        }
     }
 
-    private void loadPagePosts(final String page_id, boolean is_published) {
-        Bundle parameters = new Bundle();
-        parameters.putString("fields", "id,message,from,to");
-        parameters.putString("access_token", new PagePreference(getActivity()).getPageAccessToken());
-        parameters.putBoolean("is_published", is_published);
-        GraphRequest request = new GraphRequest(AccessToken.getCurrentAccessToken(),
-                "/" + page_id + "/promotable_posts",
-                parameters,
-                HttpMethod.GET,
-                new GraphRequest.Callback() {
-                    @Override
-                    public void onCompleted(GraphResponse response) {
-                        Log.v(TAG, response.toString());
-                        try {
-                            JSONArray arr = response.getJSONObject().getJSONArray("data");
-                            postList.clear();
-                            for(int i = 0; i < arr.length(); ++i) {
-                                String id = arr.getJSONObject(i).getString("id");
-                                String message = arr.getJSONObject(i).getString("message");
-                                String from = arr.getJSONObject(i).getJSONObject("from").getString("name");
-                                PostsItem temp = new PostsItem(id, message, from);
-                                postList.add(temp);
-                            }
-                            postAdapter.notifyDataSetChanged();
-                            recyclerView.setAdapter(postAdapter);
+    private void getNextPagePosts() {
+        GraphRequest request = lastResponse.getRequestForPagedResults(GraphResponse.PagingDirection.NEXT);
+        if(request != null) {
+            request.setCallback(new GraphRequest.Callback() {
+                @Override
+                public void onCompleted(GraphResponse response) {
+                    Log.v(TAG, response.toString());
+                    try {
+                        JSONArray arr = response.getJSONObject().getJSONArray("data");
+                        for(int i = 0; i < arr.length(); ++i) {
+                            String id = arr.getJSONObject(i).getString("id");
+                            String message = arr.getJSONObject(i).getString("message");
+                            String from = arr.getJSONObject(i).getJSONObject("from").getString("name");
+                            PostsItem temp = new PostsItem(id, message, from);
+                            postList.add(temp);
                         }
-                        catch (JSONException jsone) {
-                            jsone.printStackTrace();
-                        }
+                        postAdapter.notifyDataSetChanged();
+                        recyclerView.setAdapter(postAdapter);
+                    }
+                    catch (JSONException jsone) {
+                        Toast.makeText(getActivity(), "Error retrieving page data", Toast.LENGTH_SHORT).show();
                     }
                 }
-        );
-        request.executeAsync();
+            });
+            request.executeAsync();
+        }
     }
+
+    private SharedPreferences.OnSharedPreferenceChangeListener mPreferenceChangedListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+        @Override
+        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+            String pageId = sharedPreferences.getString("page_id", "none");
+            String pageAccessToken = sharedPreferences.getString("access_token", "none");
+            if(pageId != "none" && pageAccessToken != "none") {
+                loadPagePosts(true);
+            }
+        }
+    };
+
+    private RecyclerView.OnScrollListener mPostsListScrollListener = new RecyclerView.OnScrollListener() {
+        @Override
+        public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+            super.onScrolled(recyclerView, dx, dy);
+            if(!recyclerView.canScrollVertically(-1)) {
+                //loadPagePosts(tab.getSelectedTabPosition()==0);
+            }
+            else if(!recyclerView.canScrollVertically(1)) {
+                //getNextPagePosts();
+            }
+        }
+    };
 }
