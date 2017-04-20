@@ -106,12 +106,6 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         setContentView(R.layout.activity_main);
         LoginManager.getInstance().logInWithPublishPermissions(MainActivity.this, Arrays.asList("publish_pages"));
 
-        Class fragmentClass = PostsFragment.class;
-        loadFragment(fragmentClass, null, false);
-
-        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-
         drawer = (NavigationView) findViewById(R.id.fixed_menu_navigation_view);
         drawer.setNavigationItemSelectedListener(mOnNavigationViewItemSelectedListener);
 
@@ -122,6 +116,12 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         drawerList.setAdapter(pageItemsRecyclerViewAdapter);
 
         initializeDrawer();
+
+        Class fragmentClass = PostsFragment.class;
+        loadFragment(fragmentClass, null, false);
+
+        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
     }
 
     @Override
@@ -176,12 +176,11 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
                                     String pageId = data.getJSONObject(i).getString("id");
                                     String name = data.getJSONObject(i).getString("name");
                                     PageItem pageItem = new PageItem(pageId, name);
-                                    pageItemList.add(pageItem);
-
                                     if(i == 0) {
                                         new PagePreference(MainActivity.this).setPageId(pageId);
                                         new PagePreference(MainActivity.this).setName(name);
                                     }
+                                    pageItemList.add(pageItem);
                                 }
                                 pageItemsRecyclerViewAdapter.notifyDataSetChanged();
                                 drawerList.setAdapter(pageItemsRecyclerViewAdapter);

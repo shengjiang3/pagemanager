@@ -72,14 +72,13 @@ public class PostsFragment extends Fragment {
         if (getArguments() != null) {
             mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
         }
-        getPageAccessToken(new PagePreference(getActivity()).getPageId());
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_posts_list, container, false);
-
+        getPageAccessToken(new PagePreference(getActivity()).getPageId());
         postList = new ArrayList<PostsItem>(0);
         // Set the adapter
         Context context = view.getContext();
@@ -92,8 +91,6 @@ public class PostsFragment extends Fragment {
             recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
         }
         recyclerView.setAdapter(postAdapter);
-
-        loadPagePosts(new PagePreference(getActivity()).getPageId(), true);
 
         tab = (TabLayout) view.findViewById(R.id.tab_layout);
         tab.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
@@ -134,6 +131,7 @@ public class PostsFragment extends Fragment {
             }
         });
 
+        loadPagePosts(new PagePreference(getActivity()).getPageId(), true);
         return view;
     }
 
@@ -205,6 +203,7 @@ public class PostsFragment extends Fragment {
                 new GraphRequest.Callback() {
                     @Override
                     public void onCompleted(GraphResponse response) {
+                        Log.v(TAG, response.toString());
                         try {
                             JSONArray arr = response.getJSONObject().getJSONArray("data");
                             postList.clear();

@@ -18,7 +18,11 @@ import com.facebook.GraphResponse;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
+import com.fbapp.sheng.facebookpagemanager.model.PageItem;
+import com.fbapp.sheng.facebookpagemanager.model.PagePreference;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Arrays;
@@ -34,7 +38,7 @@ public class FBLoginActivity extends AppCompatActivity {
         callbackManager = CallbackManager.Factory.create();
 
         LoginButton loginButton = (LoginButton) findViewById(R.id.login_button);
-        loginButton.setReadPermissions("email, read_insights");
+        loginButton.setReadPermissions("read_insights");
         if(AccessToken.getCurrentAccessToken() != null) {
             startMainActivity();
         }
@@ -51,12 +55,25 @@ public class FBLoginActivity extends AppCompatActivity {
                                     JSONObject object,
                                     GraphResponse response) {
                                 Log.v(TAG, response.toString());
+                                /*try {
+                                    JSONArray data = object.getJSONObject("accounts").getJSONArray("data");
+
+                                    for (int i = 0; i < 1; ++i) {
+                                        String pageId = data.getJSONObject(i).getString("id");
+                                        String name = data.getJSONObject(i).getString("name");
+                                        new PagePreference(FBLoginActivity.this).setPageId(pageId);
+                                        new PagePreference(FBLoginActivity.this).setName(name);
+                                    }
+                                }
+                                catch(JSONException jsone) {
+                                    jsone.printStackTrace();
+                                }*/
                                 startMainActivity();
                             }
                         }
                 );
                 Bundle parameters = new Bundle();
-                parameters.putString("fields", "id, name");
+                parameters.putString("fields", "accounts");
                 request.setParameters(parameters);
                 request.executeAsync();
             }
