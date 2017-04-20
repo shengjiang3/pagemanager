@@ -76,6 +76,9 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
             switch(item.getItemId()) {
                 case R.id.log_out_selection:
                     LoginManager.getInstance().logOut();
+                    sharedPreferences.edit().putString("page_id", "none").apply();
+                    sharedPreferences.edit().putString("access_token", "none").apply();
+                    sharedPreferences.edit().putString("name", "none").apply();
                     mNavigationDrawer.closeDrawers();
                     Intent intent = new Intent(MainActivity.this, FBLoginActivity.class);
                     startActivity(intent);

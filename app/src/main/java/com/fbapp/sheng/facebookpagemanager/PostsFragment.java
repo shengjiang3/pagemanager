@@ -31,6 +31,7 @@ import com.fbapp.sheng.facebookpagemanager.model.PostsItem;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -140,7 +141,6 @@ public class PostsFragment extends Fragment {
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         lastResponse = null;
-        loadPagePosts(true);
     }
 
     @Override
@@ -148,6 +148,7 @@ public class PostsFragment extends Fragment {
         super.onResume();
         SharedPreferences pref = getActivity().getSharedPreferences("PagePreference", Context.MODE_PRIVATE);
         pref.registerOnSharedPreferenceChangeListener(mPreferenceChangedListener);
+        loadPagePosts(true);
     }
 
     @Override
@@ -155,6 +156,7 @@ public class PostsFragment extends Fragment {
         super.onPause();
         SharedPreferences pref = getActivity().getSharedPreferences("PagePreference", Context.MODE_PRIVATE);
         pref.unregisterOnSharedPreferenceChangeListener(mPreferenceChangedListener);
+        postList.clear();
     }
 
     @Override
@@ -202,18 +204,21 @@ public class PostsFragment extends Fragment {
                         public void onCompleted(GraphResponse response) {
                             Log.v(TAG, response.toString());
                             try {
-                                JSONArray arr = response.getJSONObject().getJSONArray("data");
+                                JSONObject object = response.getJSONObject();
                                 postList.clear();
-                                for(int i = 0; i < arr.length(); ++i) {
-                                    String id = arr.getJSONObject(i).getString("id");
-                                    String message = arr.getJSONObject(i).getString("message");
-                                    String from = arr.getJSONObject(i).getJSONObject("from").getString("name");
-                                    PostsItem temp = new PostsItem(id, message, from);
-                                    postList.add(temp);
+                                if(object != null) {
+                                    JSONArray arr = object.getJSONArray("data");
+                                    for (int i = 0; i < arr.length(); ++i) {
+                                        String id = arr.getJSONObject(i).getString("id");
+                                        String message = arr.getJSONObject(i).getString("message");
+                                        String from = arr.getJSONObject(i).getJSONObject("from").getString("name");
+                                        PostsItem temp = new PostsItem(id, message, from);
+                                        postList.add(temp);
+                                    }
+                                    lastResponse = response;
                                 }
                                 postAdapter.notifyDataSetChanged();
                                 recyclerView.setAdapter(postAdapter);
-                                lastResponse = response;
                             }
                             catch (JSONException jsone) {
                                 Toast.makeText(getActivity(), "Error retrieving page data", Toast.LENGTH_SHORT).show();
@@ -268,11 +273,11 @@ public class PostsFragment extends Fragment {
         @Override
         public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
             super.onScrolled(recyclerView, dx, dy);
-            if(!recyclerView.canScrollVertically(-1)) {
-                //loadPagePosts(tab.getSelectedTabPosition()==0);
+            if(!recyclerView.canScrollVertically(-1) && dy < 0) {
+                loadPagePosts(tab.getSelectedTabPosition()==0);
             }
-            else if(!recyclerView.canScrollVertically(1)) {
-                //getNextPagePosts();
+            else if(!recyclerView.canScrollVertically(1) && dy > 0) {
+                getNextPagePosts();
             }
         }
     };
