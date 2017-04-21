@@ -22,7 +22,6 @@ import com.facebook.AccessToken;
 import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
 import com.facebook.HttpMethod;
-import com.fbapp.sheng.facebookpagemanager.model.PagePreference;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -138,6 +137,7 @@ public class PublishPostsFragment extends Fragment {
                             String date_string = dateField.getText().toString();
                             if (date_string.isEmpty()) {
                                 // Error
+                                Toast.makeText(getActivity(), "Date cannot be empty", Toast.LENGTH_SHORT).show();
                                 return;
                             }
                             String time_string = timeField.getText().toString();

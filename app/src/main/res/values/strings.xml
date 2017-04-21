@@ -16,4 +16,5 @@
     <string name="hint_post_reach">Post Reach</string>
     <string name="hint_date_field">Date:</string>
     <string name="hint_time_field">Time:</string>
+    <string name="button_next_posts_string">Fetch Next Page</string>
 </resources>

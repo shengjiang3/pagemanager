@@ -25,7 +25,6 @@ import com.facebook.HttpMethod;
 import com.facebook.LoggingBehavior;
 import com.facebook.login.LoginManager;
 import com.fbapp.sheng.facebookpagemanager.model.PageItem;
-import com.fbapp.sheng.facebookpagemanager.model.PagePreference;
 import com.fbapp.sheng.facebookpagemanager.model.PostsItem;
 
 import org.json.JSONArray;
@@ -52,18 +51,26 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
             Class fragmentClass = null;
+            Bundle postArgs = new Bundle();
 
             switch (item.getItemId()) {
                 case R.id.navigation_posts:
                     fragmentClass = PostsFragment.class;
+                    postArgs.putString("edge", "promotable_posts");
+                    break;
                 case R.id.navigation_metrics:
                     fragmentClass = PostsFragment.class;
+                    break;
                 case R.id.navigation_inbox:
                     fragmentClass = PostsFragment.class;
+                    postArgs.putString("edge", "feed");
+                    break;
                 case R.id.navigation_notifications:
                     fragmentClass = PostsFragment.class;
+                    break;
             }
-            loadFragment(fragmentClass, null, false);
+
+            loadFragment(fragmentClass, postArgs, false);
             return true;
         }
 
@@ -76,9 +83,9 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
             switch(item.getItemId()) {
                 case R.id.log_out_selection:
                     LoginManager.getInstance().logOut();
-                    sharedPreferences.edit().putString("page_id", "none").apply();
-                    sharedPreferences.edit().putString("access_token", "none").apply();
-                    sharedPreferences.edit().putString("name", "none").apply();
+                    sharedPreferences.edit().putString("page_id", "none").commit();
+                    sharedPreferences.edit().putString("access_token", "none").commit();
+                    sharedPreferences.edit().putString("name", "none").commit();
                     mNavigationDrawer.closeDrawers();
                     Intent intent = new Intent(MainActivity.this, FBLoginActivity.class);
                     startActivity(intent);
@@ -129,6 +136,12 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         drawerList.setAdapter(pageItemsRecyclerViewAdapter);
 
         sharedPreferences = getSharedPreferences("PagePreference", MODE_PRIVATE);
+        sharedPreferences.edit().putString("page_id", "none").commit();
+        sharedPreferences.edit().putString("access_token", "none").commit();
+        sharedPreferences.edit().putString("name", "none").commit();
+
+        //This should be the only place where we have no page_ids
+        sharedPreferences.registerOnSharedPreferenceChangeListener(mPreferenceChangedListener);
 
         initializeDrawer();
 
@@ -138,6 +151,17 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
     }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+    }
+
 
     @Override
     public void onListFragmentInteraction(PostsItem postsItem) {
@@ -202,7 +226,6 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
                                 }
                                 pageItemsRecyclerViewAdapter.notifyDataSetChanged();
                                 drawerList.setAdapter(pageItemsRecyclerViewAdapter);
-                                getPageAccessToken();
                             }
                             catch(JSONException jsone) {
                                 jsone.printStackTrace();
@@ -219,10 +242,11 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
 
     private void getPageAccessToken() {
         String pageId = getSharedPreferences("PagePreference", Context.MODE_PRIVATE).getString("page_id", "none");
-        if(pageId == "none") {
-            Toast.makeText(MainActivity.this, "Error acquiring page_id", Toast.LENGTH_SHORT).show();
-        }
-        else {
+        if(pageId != "none") {
+            //Have a pageId now; can unset the listener
+            sharedPreferences = getSharedPreferences("PagePreference", Context.MODE_PRIVATE);
+            sharedPreferences.unregisterOnSharedPreferenceChangeListener(mPreferenceChangedListener);
+
             Bundle parameters = new Bundle();
             parameters.putString("fields", "access_token");
             GraphRequest request = new GraphRequest(AccessToken.getCurrentAccessToken(),
@@ -247,5 +271,15 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
             request.executeAsync();
         }
     }
+
+    private SharedPreferences.OnSharedPreferenceChangeListener mPreferenceChangedListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+        @Override
+        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+            String pageId = sharedPreferences.getString("page_id", "none");
+            if(pageId != "none") {
+                getPageAccessToken();
+            }
+        }
+    };
 
 }

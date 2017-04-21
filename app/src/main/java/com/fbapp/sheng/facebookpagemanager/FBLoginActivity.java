@@ -2,12 +2,8 @@ package com.fbapp.sheng.facebookpagemanager;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
 
 import com.facebook.AccessToken;
 import com.facebook.CallbackManager;
@@ -15,17 +11,10 @@ import com.facebook.FacebookCallback;
 import com.facebook.FacebookException;
 import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
-import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
-import com.fbapp.sheng.facebookpagemanager.model.PageItem;
-import com.fbapp.sheng.facebookpagemanager.model.PagePreference;
 
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.util.Arrays;
 
 public class FBLoginActivity extends AppCompatActivity {
     private CallbackManager callbackManager;
@@ -38,7 +27,7 @@ public class FBLoginActivity extends AppCompatActivity {
         callbackManager = CallbackManager.Factory.create();
 
         LoginButton loginButton = (LoginButton) findViewById(R.id.login_button);
-        loginButton.setReadPermissions("read_insights");
+        loginButton.setReadPermissions("read_insights, manage_pages");
         if(AccessToken.getCurrentAccessToken() != null) {
             startMainActivity();
         }

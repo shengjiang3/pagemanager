@@ -7,7 +7,6 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -16,17 +15,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.facebook.AccessToken;
 import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
 import com.facebook.HttpMethod;
-import com.fbapp.sheng.facebookpagemanager.model.PagePreference;
 import com.fbapp.sheng.facebookpagemanager.model.PostsItem;
 
 import org.json.JSONArray;
@@ -53,6 +47,8 @@ public class PostsFragment extends Fragment {
     private TabLayout tab;
     private FloatingActionButton fab;
     private GraphResponse lastResponse;
+    private String edge;
+    private Button nextPostButton;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -85,6 +81,13 @@ public class PostsFragment extends Fragment {
         postList = new ArrayList<PostsItem>(0);
         // Set the adapter
         Context context = view.getContext();
+        if(getArguments() != null) {
+            edge = getArguments().getString("edge");
+        }
+        else {
+            edge = "promotable_posts";
+        }
+
         recyclerView = (RecyclerView) view.findViewById(R.id.list);
 
         postAdapter = new MyPostsRecyclerViewAdapter(postList, mListener);
@@ -118,6 +121,14 @@ public class PostsFragment extends Fragment {
             }
         });
 
+        nextPostButton = (Button) view.findViewById(R.id.button_next_page);
+        nextPostButton.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view1) {
+                getNextPagePosts();
+            }
+        });
+
         fab = (FloatingActionButton) view.findViewById(R.id.fab_add_post);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -137,6 +148,7 @@ public class PostsFragment extends Fragment {
 
         return view;
     }
+
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -196,7 +208,7 @@ public class PostsFragment extends Fragment {
             parameters.putString("access_token", pageAccessToken);
             parameters.putBoolean("is_published", is_published);
             GraphRequest request = new GraphRequest(AccessToken.getCurrentAccessToken(),
-                    "/" + pageId + "/promotable_posts",
+                    "/" + pageId + "/" + edge,
                     parameters,
                     HttpMethod.GET,
                     new GraphRequest.Callback() {
@@ -264,7 +276,7 @@ public class PostsFragment extends Fragment {
             String pageId = sharedPreferences.getString("page_id", "none");
             String pageAccessToken = sharedPreferences.getString("access_token", "none");
             if(pageId != "none" && pageAccessToken != "none") {
-                loadPagePosts(true);
+                loadPagePosts(tab.getSelectedTabPosition() == 0);
             }
         }
     };
@@ -274,10 +286,10 @@ public class PostsFragment extends Fragment {
         public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
             super.onScrolled(recyclerView, dx, dy);
             if(!recyclerView.canScrollVertically(-1) && dy < 0) {
-                loadPagePosts(tab.getSelectedTabPosition()==0);
+                //loadPagePosts(tab.getSelectedTabPosition()==0);
             }
             else if(!recyclerView.canScrollVertically(1) && dy > 0) {
-                getNextPagePosts();
+                //getNextPagePosts();
             }
         }
     };
