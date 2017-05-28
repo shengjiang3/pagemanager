@@ -198,7 +198,7 @@ public class PostsFragment extends Fragment {
         void onListFragmentInteraction(PostsItem item);
     }
 
-    private void loadPagePosts(boolean is_published) {
+    private void loadPagePosts(final boolean is_published) {
         SharedPreferences sharedPreferences = getActivity().getSharedPreferences("PagePreference", Context.MODE_PRIVATE);
         String pageAccessToken = sharedPreferences.getString("access_token", "none");
         String pageId = sharedPreferences.getString("page_id", "none");
@@ -224,7 +224,7 @@ public class PostsFragment extends Fragment {
                                         String id = arr.getJSONObject(i).getString("id");
                                         String message = arr.getJSONObject(i).getString("message");
                                         String from = arr.getJSONObject(i).getJSONObject("from").getString("name");
-                                        PostsItem temp = new PostsItem(id, message, from);
+                                        PostsItem temp = new PostsItem(id, message, from, is_published);
                                         postList.add(temp);
                                     }
                                     lastResponse = response;
@@ -255,7 +255,7 @@ public class PostsFragment extends Fragment {
                             String id = arr.getJSONObject(i).getString("id");
                             String message = arr.getJSONObject(i).getString("message");
                             String from = arr.getJSONObject(i).getJSONObject("from").getString("name");
-                            PostsItem temp = new PostsItem(id, message, from);
+                            PostsItem temp = new PostsItem(id, message, from, tab.getSelectedTabPosition() == 0);
                             postList.add(temp);
                         }
                         postAdapter.notifyDataSetChanged();

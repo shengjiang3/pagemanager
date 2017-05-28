@@ -9,11 +9,13 @@ public class PostsItem {
     public String id;
     public String content;
     public String from;
+    public boolean published;
 
-    public PostsItem(String id, String content, String from) {
+    public PostsItem(String id, String content, String from, boolean published) {
         this.id = id;
         this.content = content;
         this.from = from;
+        this.published = published;
     }
 
     @Override

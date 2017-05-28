@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.NavigationView;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
@@ -167,10 +168,28 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
     public void onListFragmentInteraction(PostsItem postsItem) {
         Log.v(TAG, postsItem.id.toString());
 
-        Bundle postArgs = new Bundle();
-        postArgs.putString("post_id", postsItem.id.toString());
-        Class fragmentClass = PostMetricsFragment.class;
-        loadFragment(fragmentClass, postArgs, true);
+        //Bundle postArgs = new Bundle();
+        //postArgs.putString("post_id", postsItem.id.toString());
+        //Class fragmentClass = PostMetricsFragment.class;
+        //loadFragment(fragmentClass, postArgs, true);
+
+        if(postsItem.published == false) {
+            Bundle parameters = new Bundle();
+            parameters.putString("access_token", sharedPreferences.getString("access_token", "none"));
+            parameters.putBoolean("published", true);
+            GraphRequest request = new GraphRequest(AccessToken.getCurrentAccessToken(),
+                    "/" + postsItem.id,
+                    parameters,
+                    HttpMethod.POST,
+                    new GraphRequest.Callback() {
+                        @Override
+                        public void onCompleted(GraphResponse response) {
+                            Log.v(TAG, response.toString());
+                        }
+
+                    });
+            request.executeAsync();
+        }
     }
 
     @Override
@@ -197,6 +216,7 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         }
     }
 
+    // Fills the navigation drawer with list of pages. Sets default page to the first available page.
     private void initializeDrawer(){
         GraphRequest request = GraphRequest.newMeRequest(
                 AccessToken.getCurrentAccessToken(),
@@ -240,6 +260,7 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         request.executeAsync();
     }
 
+    // Gets access token once a page_id is acquired
     private void getPageAccessToken() {
         String pageId = getSharedPreferences("PagePreference", Context.MODE_PRIVATE).getString("page_id", "none");
         if(pageId != "none") {
@@ -272,6 +293,7 @@ public class MainActivity extends AppCompatActivity implements PostsFragment.OnL
         }
     }
 
+    //Listens for page_id to be set to not "none"
     private SharedPreferences.OnSharedPreferenceChangeListener mPreferenceChangedListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
